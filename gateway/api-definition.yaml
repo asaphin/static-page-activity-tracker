@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Activity Tracker
+  description: Activity Tracker API for tracking static pages activity
+  version: 1.0.0
+servers:
+  - url: 'https://j4igrfx4wg.execute-api.us-east-1.amazonaws.com'
+paths:
+  /activity:
+    post:
+      tags:
+        - Activity
+      description: Save activity
+      operationId: SaveActivity
+      responses:
+        201:
+      requestBody:
+        content:
+          application/json:
+        required: true
+  
