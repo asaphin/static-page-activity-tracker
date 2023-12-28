@@ -7,14 +7,15 @@ version = 0.1
 stack_name = "static-page-activity-tracker"
 
 [default.build.parameters]
-cached = true
+cached = false
 parallel = true
+cgo_enabled = 0
 
 [default.validate.parameters]
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_NAMED_IAM"
 confirm_changeset = true
 resolve_s3 = true
 stack_name = "static-page-activity-tracker-stack"

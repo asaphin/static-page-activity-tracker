@@ -5,39 +5,124 @@ Description: >
   
   Sample SAM Template for static-page-activity-tracker
 
+Parameters:
+  Environment:
+    Description: 'Environment'
+    Type: String
+    AllowedPattern: '[a-z]+'
+    Default: dev
+
+  AppName:
+    Description: 'Application name'
+    Type: String
+    AllowedPattern: '[a-z-]+'
+    Default: activity-tracker
+
+
 Globals:
   Function:
     Timeout: 5
     MemorySize: 128
 
 Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${Environment}-${AppName}-api-gateway'
+      StageName: prod
+      OpenApiVersion: 3.0.3
+      DefinitionBody:
+        Fn::Transform:
+          Name: 'AWS::Include'
+          Parameters:
+            Location: './gateway/api-definition.yaml'
+      Tags:
+        environment: !Ref Environment
+        application: !Ref AppName
+
+  SaveActivityFunctionExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub '${Environment}-${AppName}-save-activity-exec-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: 'Allow'
+          Action: 'sts:AssumeRole'
+          Principal:
+            Service: 'lambda.amazonaws.com'
+      Path: /
+      Policies:
+        - PolicyName: 'DDBPutItemAccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: 'Allow'
+              Action:
+                - 'dynamodb:PutItem'
+              Resource: !GetAtt ActivityTable.Arn
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Tags:
+        - Key: environment
+          Value: !Ref Environment
+        - Key: application
+          Value: !Ref AppName
+
   SaveActivityFunction:
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: go1.x
     Properties:
+      FunctionName: !Sub '${Environment}-${AppName}-save-activity-fn'
       CodeUri: cmd/save-activity
       Handler: bootstrap
       Runtime: provided.al2
       Architectures:
         - x86_64
+      Role: !GetAtt SaveActivityFunctionExecutionRole.Arn
       Events:
-        CatchAll:
+        ApiEvent:
           Type: Api
           Properties:
             Path: /activity
-            Method: GET
+            Method: POST
+            RestApiId: !Ref ApiGateway
       Environment:
         Variables:
-          ACTIVITY_TABLE: VALUE
+          ACTIVITY_TABLE: !Ref ActivityTable
+      Tags:
+        environment: !Ref Environment
+        application: !Ref AppName
+
+  ActivityTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: page
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: page
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: 'PAY_PER_REQUEST'
+      TableName: !Sub '${Environment}-${AppName}-activity-table'
+      Tags:
+        - Key: 'environment'
+          Value: !Ref Environment
+        - Key: 'application'
+          Value: !Ref AppName
 
 Outputs:
   SaveActivityAPI:
     Description: "API Gateway endpoint URL for Save Activity Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/activity"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/activity"
   SaveActivityFunction:
     Description: "Save Activity Lambda Function ARN"
     Value: !GetAtt SaveActivityFunction.Arn
   SaveActivityFunctionIamRole:
     Description: "Implicit IAM Role created for Save Activity function"
-    Value: !GetAtt SaveActivityFunctionRole.Arn
+    Value: !GetAtt SaveActivityFunctionExecutionRole.Arn

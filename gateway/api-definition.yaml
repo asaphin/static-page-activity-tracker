@@ -4,18 +4,54 @@ info:
   description: Activity Tracker API for tracking static pages activity
   version: 1.0.0
 servers:
-  - url: 'https://j4igrfx4wg.execute-api.us-east-1.amazonaws.com'
+  - url: 'https://3soiuq2mr0.execute-api.us-east-1.amazonaws.com'
 paths:
   /activity:
     post:
       tags:
         - Activity
-      description: Save activity
-      operationId: SaveActivity
-      responses:
-        201:
+      description: 'Save activity'
+      operationId: 'SaveActivity'
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityDTO'
         required: true
-  
+      responses:
+        201:
+          description: 'Save activity confirmation'
+      x-amazon-apigateway-request-validator: body-only
+      x-amazon-apigateway-integration:
+        type: 'aws_proxy'
+        httpMethod: 'POST'
+        passthroughBehavior: 'WHEN_NO_TEMPLATES'
+        uri:
+          Fn::Sub:
+            - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveActivityFunctionArn}/invocations'
+            - SaveActivityFunctionArn:
+                Fn::Sub:
+                  'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Environment}-${AppName}-save-activity-fn'
+        payloadFormatVersion: 1.0
+
+x-amazon-apigateway-request-validators:
+  body-only:
+    validateRequestBody: true
+    validateRequestParameters: false
+
+components:
+  schemas:
+    ActivityDTO:
+      type: object
+      additionalProperties: false
+      required:
+        - page
+        - data
+      properties:
+        page:
+          type: string
+          minLength: 4
+          maxLength: 2048
+        data:
+          type: object
+          minProperties: 1

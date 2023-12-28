@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 )
 
 type saveActivityUsecase struct {
@@ -14,5 +15,7 @@ func NewSaveActivityUsecase(repository ActivityRepository) SaveActivityUsecase {
 }
 
 func (u *saveActivityUsecase) SaveActivity(ctx context.Context, data map[string]interface{}) error {
-	return nil
+	data["timestamp"] = time.Now().UnixMilli()
+
+	return u.repository.Save(ctx, data)
 }
