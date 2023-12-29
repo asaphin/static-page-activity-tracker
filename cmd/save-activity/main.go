@@ -23,15 +23,15 @@ func (h *handler) handle(ctx context.Context, request *events.APIGatewayProxyReq
 
 	err := json.Unmarshal(body, &data)
 	if err != nil {
-		return transport.SendError(request.HTTPMethod, err)
+		return transport.SendError(err)
 	}
 
 	err = h.usecase.SaveActivity(ctx, data)
 	if err != nil {
-		return transport.SendError(request.HTTPMethod, err)
+		return transport.SendError(err)
 	}
 
-	return transport.Send(http.StatusCreated, request.HTTPMethod, "OK")
+	return transport.Send(http.StatusCreated, "OK")
 }
 
 func main() {

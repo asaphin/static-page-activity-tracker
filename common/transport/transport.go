@@ -6,24 +6,24 @@ import (
 	"net/http"
 )
 
-func getHeaders(method string) map[string]string {
+func getHeaders() map[string]string {
 	return map[string]string{
 		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Headers": "Content-Type",
+		"Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+		"Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
 		"Access-Control-Allow-Origin":  "*",
-		"Access-Control-Allow-Methods": method,
 	}
 }
 
-func newResponse(statusCode int, method string) *events.APIGatewayProxyResponse {
+func newResponse(statusCode int) *events.APIGatewayProxyResponse {
 	return &events.APIGatewayProxyResponse{
-		Headers:    getHeaders(method),
+		Headers:    getHeaders(),
 		StatusCode: statusCode,
 	}
 }
 
-func Send(statusCode int, method string, body any) (*events.APIGatewayProxyResponse, error) {
-	resp := newResponse(statusCode, method)
+func Send(statusCode int, body any) (*events.APIGatewayProxyResponse, error) {
+	resp := newResponse(statusCode)
 
 	var stringBody string
 
@@ -39,13 +39,13 @@ func Send(statusCode int, method string, body any) (*events.APIGatewayProxyRespo
 	return resp, nil
 }
 
-func SendError(httpMethod string, err error) (*events.APIGatewayProxyResponse, error) {
+func SendError(err error) (*events.APIGatewayProxyResponse, error) {
 	errResponseBody := map[string]any{
 		"errorMessage": err.Error(),
-		"errorCode":    "InternalServerError",
+		"statusCode":   "InternalServerError",
 	}
 
-	resp := newResponse(http.StatusInternalServerError, httpMethod)
+	resp := newResponse(http.StatusInternalServerError)
 
 	errResponseJSON, _ := json.Marshal(errResponseBody)
 	resp.Body = string(errResponseJSON)
