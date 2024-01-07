@@ -137,6 +137,7 @@ Resources:
       Environment:
         Variables:
           ACTIVITY_TABLE: !Ref ActivityTable
+          LOG_LEVEL: 'DEBUG'
       Tags:
         environment: !Ref Environment
         application: !Ref AppName

@@ -22,13 +22,13 @@ func (m *SaveActivityUsecaseMock) SaveActivity(_ context.Context, data map[strin
 func TestHandler(t *testing.T) {
 	testCases := []struct {
 		name          string
-		request       events.APIGatewayProxyRequest
+		request       *events.APIGatewayProxyRequest
 		usecase       *SaveActivityUsecaseMock
 		shouldBeError bool
 	}{
 		{
 			name: "should call SaveActivity method with specified data and not return an error",
-			request: events.APIGatewayProxyRequest{
+			request: &events.APIGatewayProxyRequest{
 				Body: "{\"k1\": \"v1\", \"k2\": \"v2\"}",
 			},
 			usecase: func() *SaveActivityUsecaseMock {
@@ -47,7 +47,7 @@ func TestHandler(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			h := handler{usecase: c.usecase}
 
-			err := h.handle(context.Background(), c.request)
+			_, err := h.handle(context.Background(), c.request)
 
 			if c.shouldBeError {
 				assert.Error(t, err)
