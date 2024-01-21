@@ -1,9 +1,10 @@
 package logging
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog"
 )
 
 var logLevel = strings.ToLower(os.Getenv("LOG_LEVEL"))

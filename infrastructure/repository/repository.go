@@ -2,11 +2,15 @@ package repository
 
 import (
 	"context"
-	"github.com/asaphin/static-page-activity-tracker/app"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/guregu/dynamo"
+	"github.com/rs/zerolog/log"
 	"os"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+
+	"github.com/asaphin/static-page-activity-tracker/domain"
 )
 
 var (
@@ -15,17 +19,31 @@ var (
 )
 
 type DynamoDBActivityRepository struct {
-	db *dynamo.DB
+	client *dynamodb.Client
 }
 
-func NewDynamoDBActivityRepository() app.ActivityRepository {
-	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
+func NewDynamoDBActivityRepository() *DynamoDBActivityRepository {
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(awsRegion))
+	if err != nil {
+		panic(err)
+	}
+
+	client := dynamodb.NewFromConfig(cfg)
 
 	return &DynamoDBActivityRepository{
-		db: dynamo.New(sess),
+		client: client,
 	}
 }
 
-func (r *DynamoDBActivityRepository) Save(ctx context.Context, event map[string]interface{}) error {
-	return r.db.Table(activityTableName).Put(event).RunWithContext(ctx)
+func (r *DynamoDBActivityRepository) Save(ctx context.Context, activity *domain.Activity) error {
+	item, err := attributevalue.MarshalMap(activity)
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Interface("item", item).Msg("item marshaled for dynamo db")
+
+	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{TableName: aws.String(activityTableName), Item: item})
+
+	return err
 }

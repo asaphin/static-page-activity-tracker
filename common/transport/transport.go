@@ -2,8 +2,9 @@ package transport
 
 import (
 	"encoding/json"
-	"github.com/aws/aws-lambda-go/events"
 	"net/http"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
 func getHeaders() map[string]string {
@@ -15,14 +16,14 @@ func getHeaders() map[string]string {
 	}
 }
 
-func newResponse(statusCode int) *events.APIGatewayProxyResponse {
-	return &events.APIGatewayProxyResponse{
+func newResponse(statusCode int) *events.APIGatewayV2HTTPResponse {
+	return &events.APIGatewayV2HTTPResponse{
 		Headers:    getHeaders(),
 		StatusCode: statusCode,
 	}
 }
 
-func Send(statusCode int, body any) (*events.APIGatewayProxyResponse, error) {
+func Send(statusCode int, body any) (*events.APIGatewayV2HTTPResponse, error) {
 	resp := newResponse(statusCode)
 
 	var stringBody string
@@ -39,7 +40,7 @@ func Send(statusCode int, body any) (*events.APIGatewayProxyResponse, error) {
 	return resp, nil
 }
 
-func SendError(err error) (*events.APIGatewayProxyResponse, error) {
+func SendError(err error) (*events.APIGatewayV2HTTPResponse, error) {
 	errResponseBody := map[string]any{
 		"errorMessage": err.Error(),
 		"statusCode":   "InternalServerError",

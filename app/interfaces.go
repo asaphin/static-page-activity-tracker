@@ -1,11 +1,11 @@
 package app
 
-import "context"
+import (
+	"context"
 
-type SaveActivityUsecase interface {
-	SaveActivity(ctx context.Context, data map[string]interface{}) error
-}
+	"github.com/asaphin/static-page-activity-tracker/domain"
+)
 
 type ActivityRepository interface {
-	Save(ctx context.Context, event map[string]interface{}) error
+	Save(ctx context.Context, activity *domain.Activity) error
 }

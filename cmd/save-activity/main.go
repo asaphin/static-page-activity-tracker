@@ -3,40 +3,56 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/asaphin/static-page-activity-tracker/app"
-	"github.com/asaphin/static-page-activity-tracker/common/logging"
-	"github.com/asaphin/static-page-activity-tracker/common/transport"
-	"github.com/asaphin/static-page-activity-tracker/infrastructure/repository"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/rs/zerolog/log"
+
+	"github.com/asaphin/static-page-activity-tracker/app"
+	"github.com/asaphin/static-page-activity-tracker/common/logging"
+	"github.com/asaphin/static-page-activity-tracker/common/transport"
+	"github.com/asaphin/static-page-activity-tracker/domain"
+	"github.com/asaphin/static-page-activity-tracker/infrastructure/repository"
 )
 
 func init() {
 	logging.Setup()
 }
 
-type handler struct {
-	usecase app.SaveActivityUsecase
+type ActivityDTO struct {
+	Page         string                 `json:"page" dynamo:"page"`
+	ActivityType string                 `json:"activityType" dynamo:"activityType"`
+	Data         map[string]interface{} `json:"data" dynamo:"data"`
 }
 
-func (h *handler) handle(ctx context.Context, request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+type handler struct {
+	usecase *app.SaveActivityUsecase
+}
+
+func (h *handler) handle(ctx context.Context, request *events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 	log.Debug().Interface("request", request).Msg("got a request")
 
 	body := []byte(request.Body)
 
-	var data map[string]interface{}
+	var activity ActivityDTO
 
-	err := json.Unmarshal(body, &data)
+	err := json.Unmarshal(body, &activity)
 	if err != nil {
 		return transport.SendError(err)
 	}
 
-	log.Debug().Interface("data", data).Msg("request data unmarshalled")
+	log.Debug().Interface("data", activity).Msg("request data unmarshalled")
 
-	err = h.usecase.SaveActivity(ctx, data)
+	err = h.usecase.SaveActivity(ctx, &domain.Activity{
+		Page:         activity.Page,
+		Timestamp:    time.Now().UnixMilli(),
+		ActivityType: activity.ActivityType,
+		IpAddress:    request.Headers["X-Forwarded-For"],
+		UserAgent:    request.Headers["User-Agent"],
+		Data:         activity.Data,
+	})
 	if err != nil {
 		return transport.SendError(err)
 	}

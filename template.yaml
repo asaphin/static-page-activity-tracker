@@ -18,76 +18,162 @@ Parameters:
     AllowedPattern: '[a-z-]+'
     Default: activity-tracker
 
-
 Globals:
   Function:
     Timeout: 5
     MemorySize: 128
 
 Resources:
-  ApiGateway:
-    Type: AWS::Serverless::Api
+#  ApiGateway:
+#    Type: AWS::Serverless::Api
+#    Properties:
+#      Name: !Sub '${Environment}-${AppName}-api-gateway'
+#      StageName: !Ref Environment
+#      OpenApiVersion: 3.0.3
+#      EndpointConfiguration: REGIONAL
+#      Auth:
+#        ResourcePolicy:
+#          CustomStatements: {
+#            Effect: 'Allow',
+#            Action: 'execute-api:Invoke',
+#            Resource: [ 'execute-api:/*/*/*' ],
+#            Principal: '*'
+#          }
+##        DefaultAuthorizer: 'LambdaDomainAuthorizer'
+##        Authorizers:
+##          LambdaDomainAuthorizer:
+##            FunctionArn: !GetAtt AuthorizeDomainFunction.Arn
+#      Cors:
+#        AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
+#        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#        AllowOrigin: "'*'"
+#      GatewayResponses:
+#        BAD_REQUEST_BODY:
+#          StatusCode: 400
+#          ResponseTemplates:
+#            "application/json": '{ "statusCode": "BadRequestError", "errorMessage": "$context.error.validationErrorString" }'
+#          ResponseParameters:
+#            Headers:
+#              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
+#              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              Access-Control-Allow-Origin: "'*'"
+#        DEFAULT_4xx:
+#          ResponseTemplates:
+#            "application/json": '{ "statusCode": "ClientError", "errorMessage": "$context.error.message" }'
+#          ResponseParameters:
+#            Headers:
+#              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
+#              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              Access-Control-Allow-Origin: "'*'"
+#        DEFAULT_5xx:
+#          ResponseTemplates:
+#            "application/json": '{ "statusCode": "ServerError", "errorMessage": "$context.error.message" }'
+#          ResponseParameters:
+#            Headers:
+#              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
+#              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              Access-Control-Allow-Origin: "'*'"
+#      DefinitionBody:
+#        Fn::Transform:
+#          Name: 'AWS::Include'
+#          Parameters:
+#            Location: './gateway/api-definition.yaml'
+#      MethodSettings:
+#        - HttpMethod: '*'
+#          ResourcePath: '/*'
+#      Tags:
+#        environment: !Ref Environment
+#        application: !Ref AppName
+
+  ApiGatewayV2:
+    Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Sub '${Environment}-${AppName}-api-gateway'
-      StageName: prod
-      OpenApiVersion: 3.0.3
-      EndpointConfiguration: REGIONAL
-      Auth:
-        ResourcePolicy:
-          CustomStatements: {
-            Effect: 'Allow',
-            Action: 'execute-api:Invoke',
-            Resource: [ 'execute-api:/*/*/*' ],
-            Principal: '*'
-          }
-#        DefaultAuthorizer: 'LambdaDomainAuthorizer'
-#        Authorizers:
-#          LambdaDomainAuthorizer:
-#            FunctionArn: !GetAtt AuthorizeDomainFunction.Arn
-      Cors:
-        AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
-      GatewayResponses:
-        BAD_REQUEST_BODY:
-          StatusCode: 400
-          ResponseTemplates:
-            "application/json": '{ "statusCode": "BadRequestError", "errorMessage": "$context.error.validationErrorString" }'
-          ResponseParameters:
-            Headers:
-              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
-              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              Access-Control-Allow-Origin: "'*'"
-        DEFAULT_4xx:
-          ResponseTemplates:
-            "application/json": '{ "statusCode": "ClientError", "errorMessage": "$context.error.message" }'
-          ResponseParameters:
-            Headers:
-              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
-              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              Access-Control-Allow-Origin: "'*'"
-        DEFAULT_5xx:
-          ResponseTemplates:
-            "application/json": '{ "statusCode": "ServerError", "errorMessage": "$context.error.message" }'
-          ResponseParameters:
-            Headers:
-              Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
-              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              Access-Control-Allow-Origin: "'*'"
-      DefinitionBody:
+#      Name: !Sub '${Environment}-${AppName}-api-gateway-v2'
+#      ProtocolType: HTTP
+#      Description: !Sub 'API Gateway v2 for ${Environment}-${AppName}'
+#      CorsConfiguration:
+#        AllowMethods:
+#          - 'OPTIONS'
+#          - 'GET'
+#          - 'POST'
+#          - 'PUT'
+#          - 'DELETE'
+#        AllowHeaders:
+#          - 'Content-Type'
+#          - 'X-Amz-Date'
+#          - 'Authorization'
+#          - 'X-Api-Key'
+#          - 'X-Amz-Security-Token'
+#        AllowOrigins:
+#          - '*'
+      Body:
         Fn::Transform:
           Name: 'AWS::Include'
           Parameters:
             Location: './gateway/api-definition.yaml'
-      MethodSettings:
-        - HttpMethod: '*'
-          ResourcePath: '/*'
+
+  ApiGatewayV2Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApiGatewayV2
+      Description: !Sub 'API Gateway v2 for ${Environment}-${AppName}'
+      StageName: !Ref Environment
+      AutoDeploy: true
       Tags:
         environment: !Ref Environment
         application: !Ref AppName
 
+#  UsagePlan:
+#    Type: AWS::ApiGateway::UsagePlan
+#    Properties:
+#      UsagePlanName: !Sub '${Environment}-${AppName}-default-usage-plan'
+#      Description: !Sub 'Default usage plan for the ${AppName} ${Environment} API'
+#      ApiStages:
+#        - ApiId: !Ref ApiGateway
+#          Stage: !Ref Environment
+#      Quota:
+#        Limit: 1000
+#        Period: DAY
+##      Throttle:
+##        RateLimit: 10
+#      Tags:
+#        - Key: 'environment'
+#          Value: !Ref Environment
+#        - Key: 'application'
+#          Value: !Ref AppName
+#
+#  ApiKey:
+#    Type: AWS::ApiGateway::ApiKey
+#    Properties:
+#      Name: !Sub '${Environment}-${AppName}-default-api-key'
+#      Description: !Sub 'Default API key for the ${AppName} ${Environment} API'
+#      Enabled: true
+#      Tags:
+#        - Key: 'environment'
+#          Value: !Ref Environment
+#        - Key: 'application'
+#          Value: !Ref AppName
+
+#  UsagePlanKey:
+#    Type: AWS::ApiGateway::UsagePlanKey
+#    Properties:
+#      KeyId: !Ref ApiKey
+#      KeyType: API_KEY
+#      UsagePlanId: !Ref UsagePlan
+
+  SaveActivityFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '${Environment}-${AppName}-save-activity-fn'
+      RetentionInDays: 60
+      Tags:
+        - Key: 'environment'
+          Value: !Ref Environment
+        - Key: 'application'
+          Value: !Ref AppName
+
   SaveActivityFunctionExecutionRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${Environment}-${AppName}-save-activity-exec-role'
       AssumeRolePolicyDocument:
@@ -133,7 +219,7 @@ Resources:
           Properties:
             Path: /activity
             Method: POST
-            RestApiId: !Ref ApiGateway
+            RestApiId: !Ref ApiGatewayV2
       Environment:
         Variables:
           ACTIVITY_TABLE: !Ref ActivityTable
@@ -141,54 +227,6 @@ Resources:
       Tags:
         environment: !Ref Environment
         application: !Ref AppName
-
-#  AuthorizeDomainFunctionExecutionRole:
-#    Type: 'AWS::IAM::Role'
-#    Properties:
-#      RoleName: !Sub '${Environment}-${AppName}-authorize-domain-exec-role'
-#      AssumeRolePolicyDocument:
-#        Version: '2012-10-17'
-#        Statement:
-#          Effect: 'Allow'
-#          Action: 'sts:AssumeRole'
-#          Principal:
-#            Service: 'lambda.amazonaws.com'
-#      Path: /
-#      Policies:
-#        - PolicyName: 'DDBQueryAccessPolicy'
-#          PolicyDocument:
-#            Version: '2012-10-17'
-#            Statement:
-#              Effect: 'Allow'
-#              Action:
-#                - 'dynamodb:Query'
-#              Resource: !GetAtt DictionariesTable.Arn
-#      ManagedPolicyArns:
-#        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-#      Tags:
-#        - Key: environment
-#          Value: !Ref Environment
-#        - Key: application
-#          Value: !Ref AppName
-#
-#  AuthorizeDomainFunction:
-#    Type: AWS::Serverless::Function
-#    Metadata:
-#      BuildMethod: go1.x
-#    Properties:
-#      FunctionName: !Sub '${Environment}-${AppName}-authorize-domain-fn'
-#      CodeUri: cmd/authorize-domain
-#      Handler: bootstrap
-#      Runtime: provided.al2
-#      Architectures:
-#        - x86_64
-#      Role: !GetAtt AuthorizeDomainFunctionExecutionRole.Arn
-#      Environment:
-#        Variables:
-#          AUTHORIZED_DOMAINS_TABLE: !Ref DictionariesTable
-#      Tags:
-#        environment: !Ref Environment
-#        application: !Ref AppName
 
   ActivityTable:
     Type: 'AWS::DynamoDB::Table'
@@ -211,34 +249,13 @@ Resources:
         - Key: 'application'
           Value: !Ref AppName
 
-#  DictionariesTable:
-#    Type: 'AWS::DynamoDB::Table'
-#    Properties:
-#      AttributeDefinitions:
-#        - AttributeName: pk
-#          AttributeType: S
-#        - AttributeName: sk
-#          AttributeType: S
-#      KeySchema:
-#        - AttributeName: pk
-#          KeyType: HASH
-#        - AttributeName: sk
-#          KeyType: RANGE
-#      BillingMode: 'PAY_PER_REQUEST'
-#      TableName: !Sub '${Environment}-${AppName}-dictionaries-table'
-#      Tags:
-#        - Key: 'environment'
-#          Value: !Ref Environment
-#        - Key: 'application'
-#          Value: !Ref AppName
-
 Outputs:
-  SaveActivityAPI:
+#  SaveActivityAPI:
+#    Description: "API Gateway endpoint URL for Save Activity Function"
+#    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/activity"
+  SaveActivityAPIV2:
     Description: "API Gateway endpoint URL for Save Activity Function"
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/activity"
-  SaveActivityFunction:
-    Description: "Save Activity Lambda Function ARN"
-    Value: !GetAtt SaveActivityFunction.Arn
-  SaveActivityFunctionIamRole:
-    Description: "Implicit IAM Role created for Save Activity function"
-    Value: !GetAtt SaveActivityFunctionExecutionRole.Arn
+    Value: !Sub "https://${ApiGatewayV2}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/activity"
+#  SaveActivityAPIKey:
+#    Description: "API Key for Gateway endpoint URL for Save Activity Function"
+#    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/apigateway/main/api-keys/${ApiKey}'

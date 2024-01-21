@@ -2,20 +2,26 @@ package app
 
 import (
 	"context"
-	"time"
+
+	"github.com/rs/zerolog/log"
+
+	"github.com/asaphin/static-page-activity-tracker/domain"
 )
 
-type saveActivityUsecase struct {
+type SaveActivityUsecase struct {
 	repository ActivityRepository
 }
 
-func NewSaveActivityUsecase(repository ActivityRepository) SaveActivityUsecase {
-	return &saveActivityUsecase{
+func NewSaveActivityUsecase(repository ActivityRepository) *SaveActivityUsecase {
+	return &SaveActivityUsecase{
 		repository: repository}
 }
 
-func (u *saveActivityUsecase) SaveActivity(ctx context.Context, data map[string]interface{}) error {
-	data["timestamp"] = time.Now().UnixMilli()
+func (u *SaveActivityUsecase) SaveActivity(ctx context.Context, activity *domain.Activity) error {
+	err := u.repository.Save(ctx, activity)
+	if err != nil {
+		log.Error().Err(err).Msg("unable to save activity to repository")
+	}
 
-	return u.repository.Save(ctx, data)
+	return err
 }

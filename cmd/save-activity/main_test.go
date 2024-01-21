@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type SaveActivityUsecaseMock struct {
